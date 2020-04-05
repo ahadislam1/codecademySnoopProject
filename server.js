@@ -33,7 +33,8 @@ const routes = {
     'POST': createComment
   },
   '/comments/:id': {
-    'PUT': updateComment
+    'PUT': updateComment,
+    'DELETE': deleteComment
   }
 };
 
@@ -180,10 +181,10 @@ function deleteArticle(url, request) {
       const comment = database.comments[commentId];
       database.comments[commentId] = null;
       const userCommentIds = database.users[comment.username].commentIds;
-      userCommentIds.splice(userCommentIds.indexOf(id), 1);
+      userCommentIds.splice(userCommentIds.indexOf(id), 1); //removes and replaces
     });
     const userArticleIds = database.users[savedArticle.username].articleIds;
-    userArticleIds.splice(userArticleIds.indexOf(id), 1);
+    userArticleIds.splice(userArticleIds.indexOf(id), 1); //removes and replaces
     response.status = 204;
   } else {
     response.status = 400;
@@ -291,13 +292,38 @@ function updateComment(url, request) {
     response.status = 404
   } else {
     savedComment.body = requestComment.body || savedComment.body
-    
+
     response.body = {comment: requestComment}
     response.status = 200
   }
 
   return response
 
+}
+
+function deleteComment(url, request) {
+  //recieves comment id from url
+  const id = Number(url.split('/').filter(segment => segment)[1])
+  const savedComment = database.comments[id]
+  const response = {}
+
+  //deletes comment from database. removes all references. returns 204 response.
+  if (savedComment) {
+    database.comments[id] = null
+    const userComments = database.users[savedComment.username].commentIds
+    userComments.splice(userComments.indexOf(savedComment.id), 1)
+    const articleComments = database.articles[savedComment.articleId].commentIds
+    articleComments.splice(articleComments.indexOf(savedComment.id), 1)
+
+    response.status = 204
+  } else {
+
+  //if no id supplied, comment with supllied ID DNE, return 404 response. 
+
+    response.status = 404
+  }
+
+  return response
 }
 
 // Write all code above this line.
