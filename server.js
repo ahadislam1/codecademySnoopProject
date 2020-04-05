@@ -1,5 +1,7 @@
 // database is let instead of const to allow us to modify it in test.js
 let database = {
+  comments: {},
+  nextCommentId: 1,
   users: {},
   articles: {},
   nextArticleId: 1
@@ -26,6 +28,12 @@ const routes = {
   },
   '/articles/:id/downvote': {
     'PUT': downvoteArticle
+  },
+  '/comments': {
+    'POST': createComment
+  },
+  '/comments/:id': {
+
   }
 };
 
@@ -238,6 +246,37 @@ function downvote(item, username) {
     item.downvotedBy.push(username);
   }
   return item;
+}
+
+function createComment(url, request) {
+  const response = {}
+
+  if ( !request.body || !database.users[request.body.comment.username] || 
+    !database.articles[request.body.comment.articleId] || !request.body.comment.body || 
+    !request.body.comment || typeof request.body.comment != 'object') {
+    response.status = 400
+    return response
+  }
+
+
+  const comment = {
+    id: database.nextCommentId++,
+    body: request.body.comment.body,
+    username: request.body.comment.username,
+    articleId: request.body.comment.articleId,
+    upvotedBy: [],
+    downvotedBy: []
+  }
+
+  database.comments[comment.id] = comment
+  database.articles[comment.articleId].commentIds.push(comment.id)
+  database.users[comment.username].commentIds.push(comment.id)
+
+  response.status = 201
+  response.body = {comment: comment}
+
+
+  return response
 }
 
 // Write all code above this line.
